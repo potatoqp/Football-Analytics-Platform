@@ -51,8 +51,11 @@ FEATURES = [
 def prepare_features(df):
     df = df.copy()
 
-    # remove rows with missing feature values only
+    #drop rows with missing values in the selected features
     df = df.dropna(subset=FEATURES)
+
+    #reset the index after dropping rows
+    df = df.reset_index(drop=True)
 
     X = df[FEATURES]
 
@@ -60,6 +63,7 @@ def prepare_features(df):
     X_scaled = scaler.fit_transform(X)
 
     print("Features ready:", X.shape)
+
     return df, X_scaled, scaler
 
 

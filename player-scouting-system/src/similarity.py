@@ -17,25 +17,30 @@ def build_model():
 
 
 def get_similar_players(df, sim_matrix, player_name, top_n=5):
-    if player_name not in df["Player"].values:
+
+    player_row = df[df["Player"] == player_name]
+
+    if player_row.empty:
         print("Player not found")
         return None
 
-    idx = df[df["Player"] == player_name].index[0]
+    idx = player_row.index[0]
 
     scores = list(enumerate(sim_matrix[idx]))
 
-    #sort by similarity score (descending)
     scores = sorted(scores, key=lambda x: x[1], reverse=True)
 
-    #skip first one (player itself)
-    scores = scores[1:top_n+1]
+    #remove the player himself
+    scores = scores[1:top_n + 1]
 
     similar_indices = [i for i, _ in scores]
+    similarity_scores = [score for _, score in scores]
 
     result = df.iloc[similar_indices][
         ["Player", "Squad", "Age", "Pos", "Gls", "Ast", "Sh", "SoT"]
-    ]
+    ].copy()
+
+    result["Similarity Score"] = similarity_scores
 
     return result
 
