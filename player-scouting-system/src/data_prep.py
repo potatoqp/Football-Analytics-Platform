@@ -43,8 +43,7 @@ FEATURES = [
     "Int",      #interceptions
 
     # discipline / mistakes
-    "CrdY",     #yellow cards
-    "CrdR",     #red cards
+    "CrdY"      #yellow cards
 ]
 
 
