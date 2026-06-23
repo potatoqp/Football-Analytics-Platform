@@ -21,6 +21,27 @@ selected_player = st.selectbox(
     player_list
 )
 
+player_data = df[df["Player"] == selected_player].iloc[0]
+
+st.subheader("Player Profile")
+
+col1, col2 = st.columns(2)
+
+with col1:
+    st.write(f"**Club:** {player_data['Squad']}")
+    st.write(f"**Age:** {player_data['Age']}")
+
+with col2:
+    st.write(f"**Position:** {player_data['Pos']}")
+    st.write(f"**League:** {player_data['Comp']}")
+
+st.write("---")
+
+st.write(f"⚽ Goals: {player_data['Gls']}")
+st.write(f"🎯 Assists: {player_data['Ast']}")
+st.write(f"🥅 Shots: {player_data['Sh']}")
+st.write(f"✅ Shots on Target: {player_data['SoT']}")
+
 if st.button("🔍 Find Similar Players"):
 
     results = get_similar_players(
