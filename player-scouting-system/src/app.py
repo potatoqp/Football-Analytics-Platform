@@ -66,37 +66,53 @@ player_list = sorted(df["Player"].unique())
 
 selected_player = st.selectbox(
     "Search or select a player:",
-    player_list
+    player_list,
+    index=None,
+    placeholder="Type to search a player..."
 )
+
+if selected_player is None:
+    st.stop()
 
 player_data = df[df["Player"] == selected_player].iloc[0]
 
-st.subheader("Player Profile")
+tab1, tab2 = st.tabs([
+    "📊 Player Profile",
+    "🔍 Similar Players"
+])
 
-col1, col2 = st.columns(2)
+with tab1:
 
-with col1:
-    st.write(f"**Club:** {player_data['Squad']}")
-    st.write(f"**Age:** {player_data['Age']}")
+    st.subheader("Player Profile")
 
-with col2:
-    st.write(f"**Position:** {player_data['Pos']}")
-    st.write(f"**League:** {player_data['Comp']}")
+    col1, col2 = st.columns(2)
 
-st.write("---")
+    with col1:
+        st.write(f"**Club:** {player_data['Squad']}")
+        st.write(f"**Age:** {player_data['Age']}")
 
-st.write(f"⚽ Goals: {player_data['Gls']}")
-st.write(f"🎯 Assists: {player_data['Ast']}")
-st.write(f"🥅 Shots: {player_data['Sh']}")
-st.write(f"✅ Shots on Target: {player_data['SoT']}")
+    with col2:
+        st.write(f"**Position:** {player_data['Pos']}")
+        st.write(f"**League:** {player_data['Comp']}")
 
-st.subheader("Player Radar")
+    st.write("---")
 
-fig = create_radar_chart(player_data)
+    st.write(f"⚽ Goals: {player_data['Gls']}")
+    st.write(f"🎯 Assists: {player_data['Ast']}")
+    st.write(f"🥅 Shots: {player_data['Sh']}")
+    st.write(f"✅ Shots on Target: {player_data['SoT']}")
 
-st.pyplot(fig)
+    st.subheader("Player Radar")
 
-if st.button("🔍 Find Similar Players"):
+    fig = create_radar_chart(player_data)
+
+    st.pyplot(fig)
+
+with tab2:
+
+    st.subheader(
+        f"Players similar to {selected_player}"
+    )
 
     results = get_similar_players(
         df,
@@ -106,7 +122,6 @@ if st.button("🔍 Find Similar Players"):
     )
 
     if results is not None:
-        st.subheader(f"Players similar to {selected_player}")
 
         st.dataframe(
             results.reset_index(drop=True),
