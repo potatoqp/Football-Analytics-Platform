@@ -1,7 +1,9 @@
 import streamlit as st
 import numpy as np
+import pandas as pd
 import matplotlib.pyplot as plt
 from scipy.stats import percentileofscore
+
 
 
 from similarity import build_model, get_similar_players
@@ -89,9 +91,10 @@ if selected_player is None:
 
 player_data = df[df["Player"] == selected_player].iloc[0]
 
-tab1, tab2 = st.tabs([
-    "📊 Player Profile",
-    "🔍 Similar Players"
+tab1, tab2, tab3 = st.tabs([
+    "Player Profile",
+    "Find Similar Players",
+    "Compare Players"
 ])
 
 with tab1:
@@ -110,10 +113,10 @@ with tab1:
 
     st.write("---")
 
-    st.write(f"⚽ Goals: {player_data['Gls']}")
-    st.write(f"🎯 Assists: {player_data['Ast']}")
-    st.write(f"🥅 Shots: {player_data['Sh']}")
-    st.write(f"✅ Shots on Target: {player_data['SoT']}")
+    st.write(f"Goals: {player_data['Gls']}")
+    st.write(f"Assists: {player_data['Ast']}")
+    st.write(f"Shots: {player_data['Sh']}")
+    st.write(f"Shots on Target: {player_data['SoT']}")
 
     st.subheader("Player Radar")
 
@@ -140,3 +143,96 @@ with tab2:
             results.reset_index(drop=True),
             use_container_width=True
         )
+
+with tab3:
+
+    st.subheader("Player Comparison")
+
+    col1, col2 = st.columns(2)
+
+    with col1:
+        player_a = st.selectbox(
+            "Player A",
+            player_list,
+            key="player_a",
+            index = None,
+            placeholder="Select Player A"
+        )
+
+    with col2:
+        player_b = st.selectbox(
+            "Player B",
+            player_list,
+            key="player_b",
+            index = None,   
+            placeholder="Select Player B"
+        )
+
+    if player_a is None or player_b is None:
+        st.stop()
+
+    if player_a == player_b:
+        st.warning("Please select two different players")
+        st.stop()
+
+    if player_a and player_b:
+
+        a = df[df["Player"] == player_a].iloc[0]
+        b = df[df["Player"] == player_b].iloc[0]
+
+        st.write("---")
+
+    compare_stats = pd.DataFrame({
+    "Stat": [
+        "Goals",
+        "Assists",
+        "Shots",
+        "Shots on Target",
+        "Crosses",
+        "Interceptions",
+        "Tackles Won"
+    ],
+    player_a: [
+        a["Gls"],
+        a["Ast"],
+        a["Sh"],
+        a["SoT"],
+        a["Crs"],
+        a["Int"],
+        a["TklW"]
+    ],
+    player_b: [
+        b["Gls"],
+        b["Ast"],
+        b["Sh"],
+        b["SoT"],
+        b["Crs"],
+        b["Int"],
+        b["TklW"]
+    ]
+})
+    
+st.subheader("Visual Comparison")
+
+stats = ["Gls", "Ast", "Sh", "SoT", "Crs", "Int", "TklW"]
+
+max_vals = df[stats].max()
+
+for stat in stats:
+
+    st.write(f"**{stat}**")
+
+    col1, col2 = st.columns(2)
+
+    with col1:
+        st.progress(float(a[stat]) / max_vals[stat])
+        st.caption(player_a)
+
+    with col2:
+        st.progress(float(b[stat]) / max_vals[stat])
+        st.caption(player_b) 
+
+st.dataframe(compare_stats, use_container_width=True)
+
+    
+    
