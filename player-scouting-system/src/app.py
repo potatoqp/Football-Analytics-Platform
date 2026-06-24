@@ -1,6 +1,8 @@
 import streamlit as st
 import numpy as np
 import matplotlib.pyplot as plt
+from scipy.stats import percentileofscore
+
 
 from similarity import build_model, get_similar_players
 
@@ -9,27 +11,31 @@ def load_model():
     df, sim_matrix = build_model()
     return df, sim_matrix
 
-def create_radar_chart(player_row):
+def create_percentile_radar(player_row, df):
 
-    categories = [
-        "Goals",
-        "Assists",
-        "Shots",
-        "Shots On Target",
-        "Crosses",
-        "Interceptions",
-        "Tackles Won"
-    ]
+    stat_mapping = {
+        "Goals": "Gls",
+        "Assists": "Ast",
+        "Shots": "Sh",
+        "Shots On Target": "SoT",
+        "Crosses": "Crs",
+        "Interceptions": "Int",
+        "Tackles Won": "TklW"
+    }
 
-    values = [
-        player_row["Gls"],
-        player_row["Ast"],
-        player_row["Sh"],
-        player_row["SoT"],
-        player_row["Crs"],
-        player_row["Int"],
-        player_row["TklW"]
-    ]
+    categories = list(stat_mapping.keys())
+
+    values = []
+
+    for stat_name, column in stat_mapping.items():
+
+        percentile = percentileofscore(
+            df[column],
+            player_row[column],
+            kind="rank"
+        )
+
+        values.append(percentile)
 
     values += values[:1]
 
@@ -47,11 +53,18 @@ def create_radar_chart(player_row):
         subplot_kw=dict(polar=True)
     )
 
-    ax.plot(angles, values)
+    ax.plot(angles, values, linewidth=2)
     ax.fill(angles, values, alpha=0.25)
 
     ax.set_xticks(angles[:-1])
     ax.set_xticklabels(categories)
+
+    ax.set_ylim(0, 100)
+
+    ax.set_title(
+        f"{player_row['Player']} Percentile Profile",
+        pad=20
+    )
 
     return fig
 
@@ -104,7 +117,7 @@ with tab1:
 
     st.subheader("Player Radar")
 
-    fig = create_radar_chart(player_data)
+    fig = create_percentile_radar(player_data, df)
 
     st.pyplot(fig)
 
