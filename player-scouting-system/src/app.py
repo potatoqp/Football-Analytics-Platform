@@ -1,4 +1,6 @@
 import streamlit as st
+import numpy as np
+import matplotlib.pyplot as plt
 
 from similarity import build_model, get_similar_players
 
@@ -6,6 +8,52 @@ from similarity import build_model, get_similar_players
 def load_model():
     df, sim_matrix = build_model()
     return df, sim_matrix
+
+def create_radar_chart(player_row):
+
+    categories = [
+        "Goals",
+        "Assists",
+        "Shots",
+        "Shots On Target",
+        "Crosses",
+        "Interceptions",
+        "Tackles Won"
+    ]
+
+    values = [
+        player_row["Gls"],
+        player_row["Ast"],
+        player_row["Sh"],
+        player_row["SoT"],
+        player_row["Crs"],
+        player_row["Int"],
+        player_row["TklW"]
+    ]
+
+    values += values[:1]
+
+    angles = np.linspace(
+        0,
+        2 * np.pi,
+        len(categories),
+        endpoint=False
+    ).tolist()
+
+    angles += angles[:1]
+
+    fig, ax = plt.subplots(
+        figsize=(6, 6),
+        subplot_kw=dict(polar=True)
+    )
+
+    ax.plot(angles, values)
+    ax.fill(angles, values, alpha=0.25)
+
+    ax.set_xticks(angles[:-1])
+    ax.set_xticklabels(categories)
+
+    return fig
 
 
 df, sim_matrix = load_model()
@@ -41,6 +89,12 @@ st.write(f"⚽ Goals: {player_data['Gls']}")
 st.write(f"🎯 Assists: {player_data['Ast']}")
 st.write(f"🥅 Shots: {player_data['Sh']}")
 st.write(f"✅ Shots on Target: {player_data['SoT']}")
+
+st.subheader("Player Radar")
+
+fig = create_radar_chart(player_data)
+
+st.pyplot(fig)
 
 if st.button("🔍 Find Similar Players"):
 
