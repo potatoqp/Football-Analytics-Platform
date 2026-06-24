@@ -73,23 +73,27 @@ def create_percentile_radar(player_row, df):
 
 df, sim_matrix = load_model()
 
-st.title("⚽ Player Scouting System")
-st.write("Find players with similar statistical profiles")
+st.title("Player Scouting System")
+st.write("Select a player, find similar players to him, and compare players and their stats.")
 
 
 player_list = sorted(df["Player"].unique())
+
+if "selected_player" not in st.session_state:
+    st.session_state.selected_player = None
 
 selected_player = st.selectbox(
     "Search or select a player:",
     player_list,
     index=None,
-    placeholder="Type to search a player..."
+    placeholder="Type to search a player...",
+    key="selected_player"
 )
 
 if selected_player is None:
     st.stop()
 
-player_data = df[df["Player"] == selected_player].iloc[0]
+player_data = df[df["Player"] == st.session_state.selected_player].iloc[0]
 
 tab1, tab2, tab3 = st.tabs([
     "Player Profile",
@@ -151,12 +155,18 @@ with tab3:
     col1, col2 = st.columns(2)
 
     with col1:
+        default_index = (
+        player_list.index(st.session_state.selected_player)
+        if st.session_state.selected_player in player_list
+        else None
+        )
+
         player_a = st.selectbox(
-            "Player A",
-            player_list,
-            key="player_a",
-            index = None,
-            placeholder="Select Player A"
+        "Player A",
+        player_list,
+        key="player_a",
+        index=default_index,
+        placeholder="Player from Profile tab"
         )
 
     with col2:
