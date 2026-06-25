@@ -5,15 +5,18 @@ from sklearn.metrics.pairwise import cosine_similarity
 from data_prep import load_data, clean_data, prepare_features
 
 
-def build_model():
-    df = load_data()
-    df = clean_data(df)
-    df, X_scaled, scaler = prepare_features(df)
+def build_model(position="FW"):
 
-    #similarity matrix (player vs player)
+    df = load_data()
+
+    df = clean_data(df, position)
+
+    df, X_scaled, scaler = prepare_features(df, position)
+
     sim_matrix = cosine_similarity(X_scaled)
 
     return df, sim_matrix
+
 
 
 def get_similar_players(df, sim_matrix, player_name, top_n=5):
@@ -28,16 +31,32 @@ def get_similar_players(df, sim_matrix, player_name, top_n=5):
 
     scores = list(enumerate(sim_matrix[idx]))
 
-    scores = sorted(scores, key=lambda x: x[1], reverse=True)
+    scores = sorted(
+        scores,
+        key=lambda x: x[1],
+        reverse=True
+    )
 
-    #remove the player himself
+    # remove the player itself
     scores = scores[1:top_n + 1]
 
     similar_indices = [i for i, _ in scores]
-    similarity_scores = [score for _, score in scores]
+    similarity_scores = [round(score, 3) for _, score in scores]
 
+
+    # some basic stats
+    
     result = df.iloc[similar_indices][
-        ["Player", "Squad", "Age", "Pos", "Gls", "Ast", "Sh", "SoT"]
+        [
+            "Player",
+            "Squad",
+            "Age",
+            "Pos",
+            "Gls",
+            "Ast",
+            "Sh",
+            "SoT"
+        ]
     ].copy()
 
     result["Similarity Score"] = similarity_scores
@@ -45,16 +64,23 @@ def get_similar_players(df, sim_matrix, player_name, top_n=5):
     return result
 
 
+# test
+
 if __name__ == "__main__":
-    df, sim_matrix = build_model()
 
-    print("\nAvailable players (sample):")
-    print(df["Player"].head(10))
+    for pos in ["FW", "MF", "DF", "GK"]:
 
-    player = df["Player"].iloc[0]  # pick first player for test
+        print("\n=========================")
+        print("POSITION:", pos)
 
-    print(f"\nFinding players similar to: {player}\n")
+        df, sim_matrix = build_model(pos)
 
-    similar = get_similar_players(df, sim_matrix, player)
+        print(df["Player"].head(10))
 
-    print(similar)
+        player = df["Player"].iloc[0]
+
+        print(f"\nFinding similar players to: {player}\n")
+
+        print(
+            get_similar_players(df, sim_matrix, player)
+        )

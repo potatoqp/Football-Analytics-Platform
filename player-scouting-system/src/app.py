@@ -4,18 +4,11 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from scipy.stats import percentileofscore
 
-
-
 from similarity import build_model, get_similar_players
 
-@st.cache_data
-def load_model():
-    df, sim_matrix = build_model()
-    return df, sim_matrix
 
-def create_percentile_radar(player_row, df):
-
-    stat_mapping = {
+RADAR_FEATURES = {
+    "FW": {
         "Goals": "Gls",
         "Assists": "Ast",
         "Shots": "Sh",
@@ -23,13 +16,56 @@ def create_percentile_radar(player_row, df):
         "Crosses": "Crs",
         "Interceptions": "Int",
         "Tackles Won": "TklW"
+    },
+
+    "MF": {
+        "Assists": "Ast",
+        "Crosses": "Crs",
+        "Interceptions": "Int",
+        "Tackles Won": "TklW",
+        "Passes Completed": "Compl",
+        "Fouls Drawn": "Fld"
+    },
+
+    "DF": {
+        "Interceptions": "Int",
+        "Tackles Won": "TklW",
+        "Fouls": "Fls",
+        "Yellow Cards": "CrdY",
+        "Offsides": "Off",
+        "Crosses": "Crs"
+    },
+
+    "GK": {
+        "Saves": "Saves",
+        "Save %": "Save%",
+        "Clean Sheets": "CS",
+        "Goals Against": "GA",
+        "Penalties Saved": "PKsv"
     }
+}
+
+
+
+@st.cache_data
+def load_model(position):
+    df, sim_matrix = build_model(position)
+    return df, sim_matrix
+
+
+
+def create_percentile_radar(player_row, df, position):
+
+    stat_mapping = RADAR_FEATURES[position]
 
     categories = list(stat_mapping.keys())
 
     values = []
 
-    for stat_name, column in stat_mapping.items():
+    for label, column in stat_mapping.items():
+
+        if column not in df.columns:
+            continue
 
         percentile = percentileofscore(
             df[column],
@@ -64,23 +100,33 @@ def create_percentile_radar(player_row, df):
     ax.set_ylim(0, 100)
 
     ax.set_title(
-        f"{player_row['Player']} Percentile Profile",
+        f"{player_row['Player']} ({position}) Profile",
         pad=20
     )
 
     return fig
 
 
-df, sim_matrix = load_model()
 
 st.title("Player Scouting System")
-st.write("Select a player, find similar players to him, and compare players and their stats.")
+st.write("Position-based scouting, similarity search, and player comparison")
+
+
+position = st.selectbox(
+    "Select Position",
+    ["FW", "MF", "DF", "GK"]
+)
+
+
+df, sim_matrix = load_model(position)
 
 
 player_list = sorted(df["Player"].unique())
 
+
 if "selected_player" not in st.session_state:
     st.session_state.selected_player = None
+
 
 selected_player = st.selectbox(
     "Search or select a player:",
@@ -90,16 +136,22 @@ selected_player = st.selectbox(
     key="selected_player"
 )
 
+
 if selected_player is None:
     st.stop()
 
-player_data = df[df["Player"] == st.session_state.selected_player].iloc[0]
+
+player_data = df[df["Player"] == selected_player].iloc[0]
+
+
 
 tab1, tab2, tab3 = st.tabs([
     "Player Profile",
     "Find Similar Players",
     "Compare Players"
 ])
+
+
 
 with tab1:
 
@@ -124,15 +176,15 @@ with tab1:
 
     st.subheader("Player Radar")
 
-    fig = create_percentile_radar(player_data, df)
+    fig = create_percentile_radar(player_data, df, position)
 
     st.pyplot(fig)
 
+
+
 with tab2:
 
-    st.subheader(
-        f"Players similar to {selected_player}"
-    )
+    st.subheader(f"Players similar to {selected_player}")
 
     results = get_similar_players(
         df,
@@ -142,11 +194,11 @@ with tab2:
     )
 
     if results is not None:
-
         st.dataframe(
             results.reset_index(drop=True),
             use_container_width=True
         )
+
 
 with tab3:
 
@@ -154,28 +206,26 @@ with tab3:
 
     col1, col2 = st.columns(2)
 
-    with col1:
-        default_index = (
-        player_list.index(st.session_state.selected_player)
-        if st.session_state.selected_player in player_list
+    default_index = (
+        player_list.index(selected_player)
+        if selected_player in player_list
         else None
-        )
+    )
 
+    with col1:
         player_a = st.selectbox(
-        "Player A",
-        player_list,
-        key="player_a",
-        index=default_index,
-        placeholder="Player from Profile tab"
+            "Player A",
+            player_list,
+            index=default_index,
+            key="player_a"
         )
 
     with col2:
         player_b = st.selectbox(
             "Player B",
             player_list,
-            key="player_b",
-            index = None,   
-            placeholder="Select Player B"
+            index=None,
+            key="player_b"
         )
 
     if player_a is None or player_b is None:
@@ -185,64 +235,43 @@ with tab3:
         st.warning("Please select two different players")
         st.stop()
 
-    if player_a and player_b:
+    a = df[df["Player"] == player_a].iloc[0]
+    b = df[df["Player"] == player_b].iloc[0]
 
-        a = df[df["Player"] == player_a].iloc[0]
-        b = df[df["Player"] == player_b].iloc[0]
+    st.write("---")
 
-        st.write("---")
+    
+
+    stat_map = RADAR_FEATURES[position]
 
     compare_stats = pd.DataFrame({
-    "Stat": [
-        "Goals",
-        "Assists",
-        "Shots",
-        "Shots on Target",
-        "Crosses",
-        "Interceptions",
-        "Tackles Won"
-    ],
-    player_a: [
-        a["Gls"],
-        a["Ast"],
-        a["Sh"],
-        a["SoT"],
-        a["Crs"],
-        a["Int"],
-        a["TklW"]
-    ],
-    player_b: [
-        b["Gls"],
-        b["Ast"],
-        b["Sh"],
-        b["SoT"],
-        b["Crs"],
-        b["Int"],
-        b["TklW"]
-    ]
-})
+        "Stat": list(stat_map.keys()),
+        player_a: [a[col] for col in stat_map.values()],
+        player_b: [b[col] for col in stat_map.values()]
+    })
+
+    st.subheader("Stat Comparison Table")
+    st.dataframe(compare_stats, use_container_width=True)
+
     
-st.subheader("Visual Comparison")
 
-stats = ["Gls", "Ast", "Sh", "SoT", "Crs", "Int", "TklW"]
+    st.subheader("Visual Comparison")
 
-max_vals = df[stats].max()
+    for label, stat in stat_map.items():
 
-for stat in stats:
+        st.write(f"**{label}**")
 
-    st.write(f"**{stat}**")
+        col1, col2 = st.columns(2)
 
-    col1, col2 = st.columns(2)
+        max_val = df[stat].max()
 
-    with col1:
-        st.progress(float(a[stat]) / max_vals[stat])
-        st.caption(player_a)
+        with col1:
+            st.progress(float(a[stat]) / max_val)
+            st.caption(player_a)
 
-    with col2:
-        st.progress(float(b[stat]) / max_vals[stat])
-        st.caption(player_b) 
-
-st.dataframe(compare_stats, use_container_width=True)
+        with col2:
+            st.progress(float(b[stat]) / max_val)
+            st.caption(player_b)
 
     
     
