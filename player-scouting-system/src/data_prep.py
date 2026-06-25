@@ -13,7 +13,6 @@ POSITION_FEATURES = {
         "Crs",      # crosses
         "G/Sh",     # goals per shot
         "G/SoT",    # goals per shot on target
-        "Crs",      # crosses
         "TklW",     # tackles won
         "Int",      # interceptions
         "CrdY"      # yellow cards
@@ -26,7 +25,7 @@ POSITION_FEATURES = {
         "Int",      # interceptions
         "TklW",     # tackles won
         "Compl",    # completed passes
-        "Fld",      # failed passes
+        "Fld",      # fouls drawn
         "Fls",      # fouls committed
         "Sh",       # shots
         "SoT",      # shots on target
@@ -55,6 +54,56 @@ POSITION_FEATURES = {
         "PKsv",      # penalties saved
         "PKA"        # penalties faced
     ]
+}
+
+POSITION_WEIGHTS = {
+
+    "FW": {
+        "Gls": 3.0,
+        "Ast": 2.0,
+        "Sh": 2.5,
+        "SoT": 2.5,
+        "G/Sh": 2.0,
+        "G/SoT": 2.0,
+        "Crs": 1.0,
+        "TklW": 0.5,
+        "Int": 0.5,
+        "CrdY": 0.2
+    },
+
+    "MF": {
+        "Ast": 3.0,
+        "Compl": 3.0,
+        "Fld": 2.0,
+        "Crs": 2.0,
+        "Int": 1.5,
+        "TklW": 1.5,
+        "Sh": 1.5,
+        "SoT": 1.5,
+        "Fls": 0.5,
+        "CrdY": 0.5
+    },
+
+    "DF": {
+        "Int": 3.0,
+        "TklW": 3.0,
+        "Fls": 1.5,
+        "Fld": 1.0,
+        "CrdY": 1.0,
+        "Off": 0.2,
+        "Crs": 1.0,
+        "Sh": 0.5
+    },
+
+    "GK": {
+        "Saves": 3.0,
+        "Save%": 4.0,
+        "CS": 2.5,
+        "GA": 2.0,
+        "CS%": 2.0,
+        "PKsv": 1.5,
+        "PKA": 0.5
+    }
 }
 
 
@@ -98,7 +147,6 @@ def clean_data(df, position):
     return df
 
 
-
 def prepare_features(df, position):
 
     df = df.copy()
@@ -115,9 +163,21 @@ def prepare_features(df, position):
 
     X_scaled = scaler.fit_transform(X)
 
+    weights = [
+        POSITION_WEIGHTS[position][feature]
+        for feature in features
+    ]
+
+    X_scaled = X_scaled * weights
+
     print(
         f"Features ready ({position}):",
         X.shape
+    )
+
+    print(
+        f"Weights applied ({position}):",
+        weights
     )
 
     return df, X_scaled, scaler
